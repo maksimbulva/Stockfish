@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.operations.Bool
+
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
@@ -18,90 +20,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TYPES_H_INCLUDED
-#define TYPES_H_INCLUDED
+// TODO
+//typedef uint64_t Key;
+//typedef uint64_t Bitboard;
 
-/// When compiling with provided Makefile (e.g. for Linux and OSX), configuration
-/// is done automatically. To get started type 'make help'.
-///
-/// When Makefile is not used (e.g. with Microsoft Visual Studio) some switches
-/// need to be set manually:
-///
-/// -DNDEBUG      | Disable debugging mode. Always use this for release.
-///
-/// -DNO_PREFETCH | Disable use of prefetch asm-instruction. You may need this to
-///               | run on some very old machines.
-///
-/// -DUSE_POPCNT  | Add runtime support for use of popcnt asm-instruction. Works
-///               | only in 64-bit mode and requires hardware with popcnt support.
-///
-/// -DUSE_PEXT    | Add runtime support for use of pext asm-instruction. Works
-///               | only in 64-bit mode and requires hardware with pext support.
-
-#include <cassert>
-#include <cctype>
-#include <climits>
-#include <cstdint>
-#include <cstdlib>
-
-#if defined(_MSC_VER)
-// Disable some silly and noisy warning from MSVC compiler
-#pragma warning(disable: 4127) // Conditional expression is constant
-#pragma warning(disable: 4146) // Unary minus operator applied to unsigned type
-#pragma warning(disable: 4800) // Forcing value to bool 'true' or 'false'
-#endif
-
-/// Predefined macros hell:
-///
-/// __GNUC__           Compiler is gcc, Clang or Intel on Linux
-/// __INTEL_COMPILER   Compiler is Intel
-/// _MSC_VER           Compiler is MSVC or Intel on Windows
-/// _WIN32             Building on Windows (any)
-/// _WIN64             Building on Windows 64 bit
-
-#if defined(_WIN64) && defined(_MSC_VER) // No Makefile used
-#  include <intrin.h> // Microsoft header for _BitScanForward64()
-#  define IS_64BIT
-#endif
-
-#if defined(USE_POPCNT) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
-#  include <nmmintrin.h> // Intel and Microsoft header for _mm_popcnt_u64()
-#endif
-
-#if !defined(NO_PREFETCH) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
-#  include <xmmintrin.h> // Intel and Microsoft header for _mm_prefetch()
-#endif
-
-#if defined(USE_PEXT)
-#  include <immintrin.h> // Header for _pext_u64() intrinsic
-#  define pext(b, m) _pext_u64(b, m)
-#else
-#  define pext(b, m) 0
-#endif
-
-#ifdef USE_POPCNT
-constexpr bool HasPopCnt = true;
-#else
-constexpr bool HasPopCnt = false;
-#endif
-
-#ifdef USE_PEXT
-constexpr bool HasPext = true;
-#else
-constexpr bool HasPext = false;
-#endif
-
-#ifdef IS_64BIT
-constexpr bool Is64Bit = true;
-#else
-constexpr bool Is64Bit = false;
-#endif
-
-typedef uint64_t Key;
-typedef uint64_t Bitboard;
-
-constexpr int MAX_MOVES = 256;
-constexpr int MAX_PLY   = 128;
+val MAX_MOVES = 256
+val MAX_PLY   = 128
 
 /// A move needs 16 bits to be stored
 ///
@@ -115,343 +39,359 @@ constexpr int MAX_PLY   = 128;
 /// any normal move destination square is always different from origin square
 /// while MOVE_NONE and MOVE_NULL have the same origin and destination square.
 
-enum Move : int {
-  MOVE_NONE,
-  MOVE_NULL = 65
-};
+inline class Move(val v: Int) {
+  companion object {
+    val MOVE_NONE = Move(0)
+    val MOVE_NULL = Move(65)
+  }
+}
 
-enum MoveType {
-  NORMAL,
-  PROMOTION = 1 << 14,
-  ENPASSANT = 2 << 14,
-  CASTLING  = 3 << 14
-};
+inline class MoveType(val v: Int) {
+  companion object {
+    val NORMAL = MoveType(0)
+    val PROMOTION = MoveType(1 shl 14)
+    val ENPASSANT = MoveType(2 shl 14)
+    val CASTLING  = MoveType(3 shl 14)
+  }
+}
 
-enum Color {
-  WHITE, BLACK, COLOR_NB = 2
-};
+inline class Color(val v: Int) {
+  companion object {
+    val WHITE = Color(0)
+    val BLACK = Color(1)
+    val COLOR_NB = Color(2)
+  }
+}
 
-enum CastlingSide {
-  KING_SIDE, QUEEN_SIDE, CASTLING_SIDE_NB = 2
-};
+inline class CastlingSide(val v: Int) {
+  companion object {
+    val KING_SIDE = CastlingSide(0)
+    val QUEEN_SIDE = CastlingSide(1)
+    val CASTLING_SIDE_NB = CastlingSide(2)
+  }
+}
 
-enum CastlingRight {
-  NO_CASTLING,
-  WHITE_OO,
-  WHITE_OOO = WHITE_OO << 1,
-  BLACK_OO  = WHITE_OO << 2,
-  BLACK_OOO = WHITE_OO << 3,
+inline class CastlingRight(val v: Int) {
+  companion object {
+    val NO_CASTLING = CastlingRight(0)
+    val WHITE_OO = CastlingRight(1)
+    val WHITE_OOO = CastlingRight(WHITE_OO.v shl 1)
+    val BLACK_OO  = CastlingRight(WHITE_OO.v shl 2)
+    val BLACK_OOO = CastlingRight(WHITE_OO.v shl 3)
 
-  WHITE_CASTLING = WHITE_OO | WHITE_OOO,
-  BLACK_CASTLING = BLACK_OO | BLACK_OOO,
-  ANY_CASTLING   = WHITE_CASTLING | BLACK_CASTLING,
+    val WHITE_CASTLING = CastlingRight(WHITE_OO.v or WHITE_OOO.v)
+    val BLACK_CASTLING = CastlingRight(BLACK_OO.v or BLACK_OOO.v)
+    val ANY_CASTLING   = CastlingRight(WHITE_CASTLING.v or BLACK_CASTLING.v)
 
-  CASTLING_RIGHT_NB = 16
-};
+    val CASTLING_RIGHT_NB = CastlingRight(16)
+  }
+}
 
-enum Phase {
-  PHASE_ENDGAME,
-  PHASE_MIDGAME = 128,
-  MG = 0, EG = 1, PHASE_NB = 2
-};
+inline class Phase(val v: Int) {
+  companion object {
+    val PHASE_ENDGAME = Phase(0)
+    val PHASE_MIDGAME = Phase(128)
+    val MG = Phase(0)
+    val EG = Phase(1)
+    val PHASE_NB = Phase(2)
+  }
+}
 
-enum ScaleFactor {
-  SCALE_FACTOR_DRAW    = 0,
-  SCALE_FACTOR_NORMAL  = 64,
-  SCALE_FACTOR_MAX     = 128,
-  SCALE_FACTOR_NONE    = 255
-};
+inline class ScaleFactor(val v: Int) {
+  companion object {
+    val SCALE_FACTOR_DRAW    = ScaleFactor(0)
+    val SCALE_FACTOR_NORMAL  = ScaleFactor(64)
+    val SCALE_FACTOR_MAX     = ScaleFactor(128)
+    val SCALE_FACTOR_NONE    = ScaleFactor(255)
+  }
+}
 
-enum Bound {
-  BOUND_NONE,
-  BOUND_UPPER,
-  BOUND_LOWER,
-  BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
-};
+inline class Bound(val v: Int) {
+  companion object {
+    val BOUND_NONE = Bound(0)
+    val BOUND_UPPER = Bound(1)
+    val BOUND_LOWER = Bound(2)
+    val BOUND_EXACT = Bound(BOUND_UPPER.v or BOUND_LOWER.v)
+  }
+}
 
-enum Value : int {
-  VALUE_ZERO      = 0,
-  VALUE_DRAW      = 0,
-  VALUE_KNOWN_WIN = 10000,
-  VALUE_MATE      = 32000,
-  VALUE_INFINITE  = 32001,
-  VALUE_NONE      = 32002,
+inline class Value(val v: Int) {
+  companion object {
+    val VALUE_ZERO = Value(0)
+    val VALUE_DRAW = Value(0)
+    val VALUE_KNOWN_WIN = Value(10000)
+    val VALUE_MATE = Value(32000)
+    val VALUE_INFINITE = Value(32001)
+    val VALUE_NONE = Value(32002)
 
-  VALUE_MATE_IN_MAX_PLY  =  VALUE_MATE - 2 * MAX_PLY,
-  VALUE_MATED_IN_MAX_PLY = -VALUE_MATE + 2 * MAX_PLY,
+    val VALUE_MATE_IN_MAX_PLY = Value(VALUE_MATE.v - 2 * MAX_PLY)
+    val VALUE_MATED_IN_MAX_PLY = Value(-VALUE_MATE.v + 2 * MAX_PLY)
 
-  PawnValueMg   = 128,   PawnValueEg   = 213,
-  KnightValueMg = 782,   KnightValueEg = 865,
-  BishopValueMg = 830,   BishopValueEg = 918,
-  RookValueMg   = 1289,  RookValueEg   = 1378,
-  QueenValueMg  = 2529,  QueenValueEg  = 2687,
+    val PawnValueMg = Value(128)
+    val PawnValueEg = Value(213)
+    val KnightValueMg = Value(782)
+    val KnightValueEg = Value(865)
+    val BishopValueMg = Value(830)
+    val BishopValueEg = Value(918)
+    val RookValueMg = Value(1289)
+    val RookValueEg = Value(1378)
+    val QueenValueMg = Value(2529)
+    val QueenValueEg = Value(2687)
 
-  MidgameLimit  = 15258, EndgameLimit  = 3915
-};
+    val MidgameLimit = Value(15258)
+    val EndgameLimit = Value(3915)
+  }
+}
 
-enum PieceType {
-  NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
-  ALL_PIECES = 0,
-  PIECE_TYPE_NB = 8
-};
+inline class PieceType(val v: Int) {
+  companion object {
+    val NO_PIECE_TYPE = PieceType(0)
+    val PAWN = PieceType(1)
+    val KNIGHT = PieceType(2)
+    val BISHOP = PieceType(3)
+    val ROOK = PieceType(4)
+    val QUEEN = PieceType(5)
+    val KING = PieceType(6)
+    val ALL_PIECES = PieceType(0)
+    val PIECE_TYPE_NB = PieceType(8)
+  }
+}
 
-enum Piece {
-  NO_PIECE,
-  W_PAWN = 1, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
-  B_PAWN = 9, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING,
-  PIECE_NB = 16
-};
+inline class Piece(val v: Int) {
+  companion object {
+    val NO_PIECE = Piece(0)
+    val W_PAWN = Piece(1)
+    val W_KNIGHT = Piece(2)
+    val W_BISHOP = Piece(3)
+    val W_ROOK = Piece(4)
+    val W_QUEEN = Piece(5)
+    val W_KING = Piece(6)
+    val B_PAWN = Piece(9)
+    val B_KNIGHT = Piece(10)
+    val B_BISHOP = Piece(11)
+    val B_ROOK = Piece(12)
+    val B_QUEEN = Piece(13)
+    val B_KING = Piece(14)
+    val PIECE_NB = Piece(16)
+  }
+}
 
-extern Value PieceValue[PHASE_NB][PIECE_NB];
+// TODO
+// extern Value PieceValue[PHASE_NB][PIECE_NB];
 
-enum Depth : int {
+inline class Depth(val v: Int) {
+  companion object {
+    val ONE_PLY = Depth(1)
 
-  ONE_PLY = 1,
+    val DEPTH_ZERO          =  Depth(0 * ONE_PLY.v)
+    val DEPTH_QS_CHECKS     =  Depth(0 * ONE_PLY.v)
+    val DEPTH_QS_NO_CHECKS  = Depth(-1 * ONE_PLY.v)
+    val DEPTH_QS_RECAPTURES = Depth(-5 * ONE_PLY.v)
 
-  DEPTH_ZERO          =  0 * ONE_PLY,
-  DEPTH_QS_CHECKS     =  0 * ONE_PLY,
-  DEPTH_QS_NO_CHECKS  = -1 * ONE_PLY,
-  DEPTH_QS_RECAPTURES = -5 * ONE_PLY,
+    val DEPTH_NONE = Depth(-6 * ONE_PLY.v)
+    val DEPTH_MAX  = Depth(MAX_PLY * ONE_PLY.v)
+  }
+}
 
-  DEPTH_NONE = -6 * ONE_PLY,
-  DEPTH_MAX  = MAX_PLY * ONE_PLY
-};
+// TODO
+// static_assert(!(ONE_PLY and (ONE_PLY - 1)), "ONE_PLY is not a power of 2");
 
-static_assert(!(ONE_PLY & (ONE_PLY - 1)), "ONE_PLY is not a power of 2");
+inline class Square(val v: Int) {
+  companion object {
+    const val SQ_A1 = 0
+    const val SQ_H8 = 63
+  }
+  // TODO
+//  SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
+//  SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
+//  SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
+//  SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
+//  SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
+//  SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
+//  SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
+//  SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
+//  SQ_NONE,
+//
+//  SQUARE_NB = 64
+}
 
-enum Square : int {
-  SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
-  SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
-  SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
-  SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
-  SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
-  SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
-  SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
-  SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
-  SQ_NONE,
+inline class Direction(val v: Int) {
+  companion object {
+    val NORTH = Direction(8)
+    val EAST = Direction(1)
+    val SOUTH = Direction(-NORTH.v)
+    val WEST = Direction(-EAST.v)
 
-  SQUARE_NB = 64
-};
+    val NORTH_EAST = Direction(NORTH.v + EAST.v)
+    val SOUTH_EAST = Direction(SOUTH.v + EAST.v)
+    val SOUTH_WEST = Direction(SOUTH.v + WEST.v)
+    val NORTH_WEST = Direction(NORTH.v + WEST.v)
+  }
+}
 
-enum Direction : int {
-  NORTH =  8,
-  EAST  =  1,
-  SOUTH = -NORTH,
-  WEST  = -EAST,
+inline class File(val v: Int) {
+  // TODO
+  // FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
+}
 
-  NORTH_EAST = NORTH + EAST,
-  SOUTH_EAST = SOUTH + EAST,
-  SOUTH_WEST = SOUTH + WEST,
-  NORTH_WEST = NORTH + WEST
-};
-
-enum File : int {
-  FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
-};
-
-enum Rank : int {
-  RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
-};
+inline class Rank(val v: Int) {
+  // TODO
+  // RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
+}
 
 
-/// Score enum stores a middlegame and an endgame value in a single integer (enum).
+/// Score inline class (val v: Int) stores a middlegame and an endgame value in a single integer (inline class (val v: Int)).
 /// The least significant 16 bits are used to store the middlegame value and the
 /// upper 16 bits are used to store the endgame value. We have to take care to
 /// avoid left-shifting a signed int to avoid undefined behavior.
-enum Score : int { SCORE_ZERO };
+inline class Score(val v: Int) {
+  companion object {
+    val SCORE_ZERO = Score(0)
+  }
+}
 
-constexpr Score make_score(int mg, int eg) {
-  return Score((int)((unsigned int)eg << 16) + mg);
+fun make_score(mg: Int, eg: Int): Score {
+  return Score((eg shl 16) + mg)
 }
 
 /// Extracting the signed lower and upper 16 bits is not so trivial because
 /// according to the standard a simple cast to short is implementation defined
 /// and so is a right shift of a signed integer.
-inline Value eg_value(Score s) {
-  union { uint16_t u; int16_t s; } eg = { uint16_t(unsigned(s + 0x8000) >> 16) };
-  return Value(eg.s);
-}
+// TODO
+//inline Value eg_value(Score s) {
+//  union { uint16_t u; int16_t s; } eg = { uint16_t(unsigned(s + 0x8000) shr 16) };
+//  return Value(eg.s);
+//}
 
-inline Value mg_value(Score s) {
-  union { uint16_t u; int16_t s; } mg = { uint16_t(unsigned(s)) };
-  return Value(mg.s);
-}
-
-#define ENABLE_BASE_OPERATORS_ON(T)                                \
-constexpr T operator+(T d1, T d2) { return T(int(d1) + int(d2)); } \
-constexpr T operator-(T d1, T d2) { return T(int(d1) - int(d2)); } \
-constexpr T operator-(T d) { return T(-int(d)); }                  \
-inline T& operator+=(T& d1, T d2) { return d1 = d1 + d2; }         \
-inline T& operator-=(T& d1, T d2) { return d1 = d1 - d2; }
-
-#define ENABLE_INCR_OPERATORS_ON(T)                                \
-inline T& operator++(T& d) { return d = T(int(d) + 1); }           \
-inline T& operator--(T& d) { return d = T(int(d) - 1); }
-
-#define ENABLE_FULL_OPERATORS_ON(T)                                \
-ENABLE_BASE_OPERATORS_ON(T)                                        \
-ENABLE_INCR_OPERATORS_ON(T)                                        \
-constexpr T operator*(int i, T d) { return T(i * int(d)); }        \
-constexpr T operator*(T d, int i) { return T(int(d) * i); }        \
-constexpr T operator/(T d, int i) { return T(int(d) / i); }        \
-constexpr int operator/(T d1, T d2) { return int(d1) / int(d2); }  \
-inline T& operator*=(T& d, int i) { return d = T(int(d) * i); }    \
-inline T& operator/=(T& d, int i) { return d = T(int(d) / i); }
-
-ENABLE_FULL_OPERATORS_ON(Value)
-ENABLE_FULL_OPERATORS_ON(Depth)
-ENABLE_FULL_OPERATORS_ON(Direction)
-
-ENABLE_INCR_OPERATORS_ON(PieceType)
-ENABLE_INCR_OPERATORS_ON(Piece)
-ENABLE_INCR_OPERATORS_ON(Color)
-ENABLE_INCR_OPERATORS_ON(Square)
-ENABLE_INCR_OPERATORS_ON(File)
-ENABLE_INCR_OPERATORS_ON(Rank)
-
-ENABLE_BASE_OPERATORS_ON(Score)
-
-#undef ENABLE_FULL_OPERATORS_ON
-#undef ENABLE_INCR_OPERATORS_ON
-#undef ENABLE_BASE_OPERATORS_ON
-
-/// Additional operators to add integers to a Value
-constexpr Value operator+(Value v, int i) { return Value(int(v) + i); }
-constexpr Value operator-(Value v, int i) { return Value(int(v) - i); }
-inline Value& operator+=(Value& v, int i) { return v = v + i; }
-inline Value& operator-=(Value& v, int i) { return v = v - i; }
-
-/// Additional operators to add a Direction to a Square
-constexpr Square operator+(Square s, Direction d) { return Square(int(s) + int(d)); }
-constexpr Square operator-(Square s, Direction d) { return Square(int(s) - int(d)); }
-inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
-inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
-
-/// Only declared but not defined. We don't want to multiply two scores due to
-/// a very high risk of overflow. So user should explicitly convert to integer.
-Score operator*(Score, Score) = delete;
+// TODO
+//inline Value mg_value(Score s) {
+//  union { uint16_t u; int16_t s; } mg = { uint16_t(unsigned(s)) };
+//  return Value(mg.s);
+//}
 
 /// Division of a Score must be handled separately for each term
-inline Score operator/(Score s, int i) {
-  return make_score(mg_value(s) / i, eg_value(s) / i);
-}
+//inline Score operator/(Score s, int i) {
+//  return make_score(mg_value(s) / i, eg_value(s) / i);
+//}
 
 /// Multiplication of a Score by an integer. We check for overflow in debug mode.
-inline Score operator*(Score s, int i) {
+// TODO
+//inline Score operator*(Score s, int i) {
+//
+//  Score result = Score(int(s) * i);
+//
+//  assert(eg_value(result) == (i * eg_value(s)));
+//  assert(mg_value(result) == (i * mg_value(s)));
+//  assert((i == 0) || (result / i) == s);
+//
+//  return result;
+//}
 
-  Score result = Score(int(s) * i);
-
-  assert(eg_value(result) == (i * eg_value(s)));
-  assert(mg_value(result) == (i * mg_value(s)));
-  assert((i == 0) || (result / i) == s);
-
-  return result;
+fun Color.inv(): Color {
+  return Color(v xor Color.BLACK.v)
 }
 
-constexpr Color operator~(Color c) {
-  return Color(c ^ BLACK); // Toggle color
+// TODO
+//fun Square.inv(): Square {
+//  return Square(v xor SQ_A8) // Vertical flip SQ_A1 -> SQ_A8
+//}
+
+//constexpr File operator~(File f) {
+//  return File(f ^ FILE_H); // Horizontal flip FILE_A -> FILE_H
+//}
+
+fun Piece.inv(): Piece {
+  return Piece(v xor 8) // Swap color of piece B_KNIGHT -> W_KNIGHT
 }
 
-constexpr Square operator~(Square s) {
-  return Square(s ^ SQ_A8); // Vertical flip SQ_A1 -> SQ_A8
+// TODO
+//constexpr CastlingRight operator|(Color c, CastlingSide s) {
+//  return CastlingRight(WHITE_OO shl ((s == QUEEN_SIDE) + 2 * c));
+//}
+
+fun Value.mate_in(ply: Int): Value {
+  return Value(Value.VALUE_MATE.v - ply)
 }
 
-constexpr File operator~(File f) {
-  return File(f ^ FILE_H); // Horizontal flip FILE_A -> FILE_H
+fun Value.mated_in(ply: Int): Value {
+  return Value(-Value.VALUE_MATE.v + ply)
 }
 
-constexpr Piece operator~(Piece pc) {
-  return Piece(pc ^ 8); // Swap color of piece B_KNIGHT -> W_KNIGHT
+fun make_square(f: File, r: Rank): Square {
+  return Square((r.v shl 3) + f.v)
 }
 
-constexpr CastlingRight operator|(Color c, CastlingSide s) {
-  return CastlingRight(WHITE_OO << ((s == QUEEN_SIDE) + 2 * c));
+fun make_piece(c: Color, pt: PieceType): Piece {
+  return Piece((c.v shl 3) + pt.v)
 }
 
-constexpr Value mate_in(int ply) {
-  return VALUE_MATE - ply;
+fun type_of(pc: Piece): PieceType {
+  return PieceType(pc.v and 7)
 }
 
-constexpr Value mated_in(int ply) {
-  return -VALUE_MATE + ply;
+fun color_of(pc: Piece): Color {
+  assert(pc != Piece.NO_PIECE);
+  return Color(pc.v shr 3)
 }
 
-constexpr Square make_square(File f, Rank r) {
-  return Square((r << 3) + f);
+fun is_ok(s: Square): Boolean {
+  return s.v >= Square.SQ_A1 && s.v <= Square.SQ_H8
 }
 
-constexpr Piece make_piece(Color c, PieceType pt) {
-  return Piece((c << 3) + pt);
+fun file_of(s: Square): File {
+  return File(s.v and 7)
 }
 
-constexpr PieceType type_of(Piece pc) {
-  return PieceType(pc & 7);
+fun rank_of(s: Square): Rank {
+  return Rank(s.v shr 3)
 }
 
-inline Color color_of(Piece pc) {
-  assert(pc != NO_PIECE);
-  return Color(pc >> 3);
+fun relative_square(c: Color, s: Square): Square {
+  return Square(s.v xor (c.v * 56))
 }
 
-constexpr bool is_ok(Square s) {
-  return s >= SQ_A1 && s <= SQ_H8;
+fun relative_rank(c: Color, r: Rank): Rank {
+  return Rank(r.v xor (c.v * 7))
 }
 
-constexpr File file_of(Square s) {
-  return File(s & 7);
+fun relative_rank(c: Color, s: Square): Rank {
+  return relative_rank(c, rank_of(s))
 }
 
-constexpr Rank rank_of(Square s) {
-  return Rank(s >> 3);
+fun pawn_push(c: Color): Direction {
+  return if (c == Color.WHITE) Direction.NORTH else Direction.SOUTH
 }
 
-constexpr Square relative_square(Color c, Square s) {
-  return Square(s ^ (c * 56));
+fun from_sq(m: Move): Square {
+  return Square((m.v shr 6) and 0x3F)
 }
 
-constexpr Rank relative_rank(Color c, Rank r) {
-  return Rank(r ^ (c * 7));
+fun to_sq(m: Move): Square {
+  return Square(m.v and 0x3F)
 }
 
-constexpr Rank relative_rank(Color c, Square s) {
-  return relative_rank(c, rank_of(s));
+fun from_to(m: Move): Int {
+ return m.v and 0xFFF
 }
 
-constexpr Direction pawn_push(Color c) {
-  return c == WHITE ? NORTH : SOUTH;
+fun type_of(m: Move): MoveType {
+  return MoveType(m.v and (3 shl 14))
 }
 
-constexpr Square from_sq(Move m) {
-  return Square((m >> 6) & 0x3F);
+fun promotion_type(m: Move): PieceType {
+  return PieceType(((m.v shr 12) and 3) + PieceType.KNIGHT.v)
 }
 
-constexpr Square to_sq(Move m) {
-  return Square(m & 0x3F);
+fun make_move(from: Square, to: Square): Move {
+  return Move((from.v shl 6) + to.v)
 }
 
-constexpr int from_to(Move m) {
- return m & 0xFFF;
-}
+// TODO
+//template<MoveType T>
+//constexpr Move make(Square from, Square to, PieceType pt = KNIGHT) {
+//  return Move(T + ((pt - KNIGHT) shl 12) + (from shl 6) + to);
+//}
 
-constexpr MoveType type_of(Move m) {
-  return MoveType(m & (3 << 14));
+fun is_ok(m: Move): Boolean {
+  return from_sq(m) != to_sq(m) // Catch MOVE_NULL and MOVE_NONE
 }
-
-constexpr PieceType promotion_type(Move m) {
-  return PieceType(((m >> 12) & 3) + KNIGHT);
-}
-
-constexpr Move make_move(Square from, Square to) {
-  return Move((from << 6) + to);
-}
-
-template<MoveType T>
-constexpr Move make(Square from, Square to, PieceType pt = KNIGHT) {
-  return Move(T + ((pt - KNIGHT) << 12) + (from << 6) + to);
-}
-
-constexpr bool is_ok(Move m) {
-  return from_sq(m) != to_sq(m); // Catch MOVE_NULL and MOVE_NONE
-}
-
-#endif // #ifndef TYPES_H_INCLUDED
